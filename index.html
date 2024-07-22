@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload e Download de Imagem</title>
+</head>
+<body>
+    <h1>Upload e Download de Imagem</h1>
+    <form id="upload-form">
+        <label for="file">Escolha uma imagem:</label>
+        <input type="file" id="file" name="file" accept="image/" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const fileField = document.querySelector('input[type="file"]');
+
+            formData.append('file', fileField.files[0]);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if(response.status == 202) {
+                    document.getElementById('result').innerHTML = `
+                        <p>${result.message}</p>
+                        <button id="download-btn">Baixar Imagem Redimensionada</button>
+                    `;
+                    document.getElementById('download-btn').addEventListener('click', downloadImage);
+                } else {
+                    document.getElementById('result').innerHTML = `<p>${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p>Erro no upload da imagem.</p>';
+            }
+        });
+
+        async function downloadImage() {
+            const resizedImagePath = 'resized_' + document.querySelector('input[type="file"]').files[0].name;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/' + resizedImagePath);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = resizedImagePath;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                document.getElementById('result').innerHTML += '<p>Erro no download da imagem.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
